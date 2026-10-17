@@ -1,8 +1,8 @@
-# Expense Tracker RC
+# Integrating RevenueCat with Samsung IAP for Galaxy Store Applications
 
 A sample Android expense tracker that adds a RevenueCat-managed subscription to an app distributed on both **Google Play** and **Galaxy Store**. It is intentionally small so the billing integration is the focus.
 
-The subscription unlocks additional themes (Dark, Blue, Green). Purchases, restores, and entitlement checks are handled through the [RevenueCat Purchases SDK](https://www.revenuecat.com/docs/getting-started/installation/android).
+The subscription unlocks additional themes (Dark, Blue, Green). Purchases, restores, and entitlement checks are handled through the [RevenueCat Purchases SDK](https://www.revenuecat.com/docs/getting-started/installation/android). The full walkthrough from Samsung blog [Integrating RevenueCat with Samsung In-App Purchase for Galaxy Store Applications](https://developer.samsung.com/galaxy-store/blog/en/2026/08/13/integrating-revenuecat-with-samsung-in-app-purchase-for-galaxy-store-applications)
 
 > **Scope:** This project assumes RevenueCat is already integrated for Google Play Billing. This README covers the Galaxy Store specifics and the parts of the project that differ between the two stores. For general RevenueCat setup, see the [RevenueCat Android documentation](https://www.revenuecat.com/docs).
 
@@ -53,15 +53,6 @@ Versions are centralized in [gradle/libs.versions.toml](gradle/libs.versions.tom
    - `galaxyStoreDebug` for Galaxy Store
 4. Run the app on a device.
 
-From the command line:
-
-```bash
-# Google Play flavor
-./gradlew assemblePlayStoreDebug
-
-# Galaxy Store flavor
-./gradlew assembleGalaxyStoreDebug
-```
 
 > **Emulators:** Samsung IAP is not supported on emulators. Use a physical Samsung Galaxy device, or a device from Remote Test Lab (RTL), for `galaxyStore` purchase testing.
 
@@ -73,21 +64,10 @@ RevenueCat settings live in the `defaultConfig` and flavor blocks of [app/build.
 
 | Build config field | Default | Purpose |
 | --- | --- | --- |
-| `REVENUECAT_PUBLIC_KEY` | Set per flavor | RevenueCat **public** SDK key for the store app. Must not be a secret key. |
 | `REVENUECAT_PRODUCT_ID` | `premium_monthly` | Product identifier. Must match the product in the store console and RevenueCat. |
 | `REVENUECAT_ENTITLEMENT_ID` | `premium` | Entitlement that unlocks themes. |
 | `REVENUECAT_OFFERING_ID` | `""` (blank) | Blank uses the current offering. Set a value (for example `default`) to use a specific offering. |
-| `REVENUECAT_STORE` | Set per flavor | Store identifier used by RevenueCat. |
 
-If `REVENUECAT_PUBLIC_KEY` still has its placeholder value, the app shows a message asking you to replace it, and RevenueCat is not configured.
-
-### Identifiers that must match
-
-The same product ID and entitlement ID must be used in:
-
-1. The Google Play Console and/or Samsung Seller Portal
-2. The RevenueCat dashboard (product catalog, entitlement, and offering)
-3. `app/build.gradle.kts`
 
 ### Product Flavors
 
@@ -98,7 +78,7 @@ The project uses a `store` flavor dimension with two flavors:
 | `playStore` | Google Play | `PLAY_STORE` | `PurchasesConfiguration` |
 | `galaxyStore` | Galaxy Store | `GALAXY_STORE` | `GalaxyConfiguration` |
 
-Each flavor sets its own `STORE_NAME`, `REVENUECAT_STORE`, and `REVENUECAT_PUBLIC_KEY` build config fields. Each flavor's RevenueCat dependencies are declared in `app/build.gradle.kts`:
+Each flavor sets its own `STORE_NAME`, and `REVENUECAT_PUBLIC_KEY` build config fields. Each flavor's RevenueCat dependencies are declared in `app/build.gradle.kts`:
 
 ```kotlin
 add("playStoreImplementation", libs.revenuecat.purchases.play)
@@ -112,7 +92,7 @@ Keep these separate. Galaxy support requires Purchases Android SDK 10.7.0 or lat
 
 ## Galaxy Store Integration
 
-This section covers what changes when adding Galaxy Store to an existing RevenueCat setup. The full walkthrough from Samsung is in the [Samsung Developers blog post](https://developer.samsung.com/galaxy-store/blog/en/2026/08/13/integrating-revenuecat-with-samsung-in-app-purchase-for-galaxy-store-applications).
+This section covers what changes when adding Galaxy Store to an existing RevenueCat setup. 
 
 ### 1. Samsung Seller Portal
 
@@ -124,7 +104,7 @@ This section covers what changes when adding Galaxy Store to an existing Revenue
 
 ### 2. RevenueCat Dashboard
 
-1. Under **Apps**, add a Galaxy Store app. Enter the application name and the package name (`com.srbd.testrc`).
+1. Under **Apps**, add a Galaxy Store app. Enter the application name and the package name.
 2. Enter the Seller Portal service account ID and upload the service account private key.
 3. Copy the generated **public API key** and place it in the `galaxyStore` flavor as `REVENUECAT_PUBLIC_KEY`.
 4. Under **Product catalog → Products**, select the **Galaxy Store** tab, add a new product with the same identifier, and set the type to **Subscription**.
@@ -153,10 +133,6 @@ GalaxyConfiguration.Builder(context, publicSdkKey, GalaxyBillingMode.PRODUCTION)
 
 ## Testing
 
-### Google Play
-
-Use the standard Google Play testing setup (license testers, internal testing track). The Play flavor behaves the same as before the Galaxy Store work was added.
-
 ### Galaxy Store
 
 1. Install the `galaxyStore` build on a Samsung device. Use a physical device or a Remote Test Lab (RTL) device. Emulators are not supported.
@@ -164,8 +140,6 @@ Use the standard Google Play testing setup (license testers, internal testing tr
 3. Purchase the subscription from the app. Use the Subscribe button in the **Theme Subscription** card.
 4. Confirm that the status changes to **Active** and that the Dark, Blue, and Green themes become selectable.
 5. To test cancellation, open Galaxy Store, go to **Menu → Subscriptions**, and unsubscribe.
-6. Check the RevenueCat dashboard overview for the sandbox transaction.
-7. Use **Restore / Check Subscription** to confirm that the entitlement is restored after reinstalling the app.
 
 ---
 
@@ -196,7 +170,6 @@ The only store-specific code is the `RevenueCatConfigurationFactory` in each fla
 Work through this list before distributing a build outside of internal testing:
 
 - [ ] `GalaxyBillingMode` is set to `PRODUCTION` in [galaxyStore/RevenueCatConfigurationFactory.kt](app/src/galaxyStore/java/com/srbd/testrc/RevenueCatConfigurationFactory.kt)
-- [ ] `release` build type uses a real release signing config instead of the debug key
 - [ ] Production Google Play and Galaxy Store products are active and match the RevenueCat dashboard
 - [ ] Public SDK keys in `build.gradle.kts` are the production keys for each store
 - [ ] The `versionCode` and `versionName` in `app/build.gradle.kts` are incremented
